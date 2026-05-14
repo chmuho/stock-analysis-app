@@ -1,0 +1,246 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>개인 투자 분석 도우미</title>
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <main class="app-shell">
+      <section class="topbar">
+        <div>
+          <p class="eyebrow">Personal Investment Desk</p>
+          <h1>초보 투자자를 위한 의사결정 대시보드</h1>
+        </div>
+        <div class="notice">수익 보장 도구가 아니라, 세금과 위험을 먼저 보여줘서 성급한 결정을 줄이는 개인용 보조 시스템입니다.</div>
+      </section>
+
+      <section class="controls">
+        <div class="market-tabs" aria-label="시장 선택">
+          <button class="tab-btn" data-market-tab="US">미국 대표</button>
+          <button class="tab-btn active" data-market-tab="US_LISTED_300">미국 300</button>
+          <button class="tab-btn" data-market-tab="ETF">ETF</button>
+          <button class="tab-btn" data-market-tab="DIVIDEND">배당</button>
+          <button class="tab-btn" data-market-tab="KR">한국</button>
+          <button class="tab-btn" data-market-tab="KR_LISTED_300">한국 300</button>
+        </div>
+        <div class="search-box">
+          <label for="stockSearch">종목 검색</label>
+          <div class="search-row">
+            <input id="stockSearch" placeholder="예: 삼성전자, 애플, 테슬라, VOO" autocomplete="off" />
+            <button id="searchBtn" type="button">검색</button>
+          </div>
+          <div id="searchResults" class="search-results hidden"></div>
+        </div>
+        <div class="field wide">
+          <label for="symbols" id="symbolsLabel">종목 코드 또는 종목명</label>
+          <input id="symbols" value="VOO, VTI, SCHD, KO, PEP, JNJ, PG, AAPL, MSFT, NVDA" spellcheck="false" />
+        </div>
+        <div class="field">
+          <label for="market">빠른 목록</label>
+          <select id="market">
+            <option value="custom">직접 입력</option>
+            <option value="US">미국 대표/배당</option>
+            <option value="US_LARGE">미국 대형주 60</option>
+            <option value="US_WIDE">미국 후보 120</option>
+            <option value="US_LISTED_300" selected>미국 전체 샘플 300</option>
+            <option value="ETF">ETF 중심</option>
+            <option value="DIVIDEND">배당 후보</option>
+            <option value="KR">한국 대표주</option>
+            <option value="KR_LISTED_300">한국 전체 샘플 300</option>
+          </select>
+        </div>
+        <button id="analyzeBtn">분석하기</button>
+      </section>
+
+      <section class="planner">
+        <div class="panel planner-card" id="usPlanner">
+          <div class="panel-head">
+            <h2>미국주식 세후 손익 계산</h2>
+          </div>
+          <div class="planner-grid">
+            <label>투자금(원)<input id="investmentKrw" type="number" value="10000000" /></label>
+            <label>예상 수익률(%)<input id="expectedReturnPct" type="number" value="10" /></label>
+            <label>이미 쓴 공제(원)<input id="usedDeduction" type="number" value="0" /></label>
+            <label>수수료/환전 비용(%)<input id="feePct" type="number" value="0.25" step="0.01" /></label>
+          </div>
+          <div id="taxResult" class="tax-result"></div>
+        </div>
+
+        <div class="panel planner-card hidden" id="krPlanner">
+          <div class="panel-head">
+            <h2>한국주식 세금/배당 안내</h2>
+          </div>
+          <div class="market-guide">
+            <div>
+              <span>종목 입력</span>
+              <strong>삼성전자 또는 005930</strong>
+              <p>한국 종목은 6자리 숫자 코드지만, 이제 종목명으로 입력해도 자동 변환합니다.</p>
+            </div>
+            <div>
+              <span>국내 배당</span>
+              <strong>보통 15.4% 원천징수</strong>
+              <p>앱의 배당 예상은 이 단순 가정을 사용합니다.</p>
+            </div>
+            <div>
+              <span>국내 주식 양도세</span>
+              <strong>일반 소액투자자는 보통 없음</strong>
+              <p>대주주, 일부 ETF/파생형 상품은 예외가 있으니 실제 투자 전 확인이 필요합니다.</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="panel rule-card">
+          <div class="panel-head">
+            <h2 id="safetyTitle">초보자 안전장치</h2>
+          </div>
+          <ul class="rules" id="safetyRules">
+            <li>처음부터 목돈을 한 번에 넣지 말고 3~6회로 나눠서 진입합니다.</li>
+            <li>개별주는 전체 투자금의 작은 일부로 제한하고, 핵심은 ETF로 둡니다.</li>
+            <li>위험/주의 판정 종목은 “왜 사야 하는지”를 기록하기 전에는 매수하지 않습니다.</li>
+            <li>대출, 생활비, 1년 안에 쓸 돈은 투자금에서 제외합니다.</li>
+          </ul>
+        </div>
+      </section>
+
+      <section id="basketButtons" class="basket-row"></section>
+
+      <section class="filters">
+        <div class="entry-filter" aria-label="진입 판단 필터">
+          <button class="entry-filter-btn active" data-entry-filter="ALL" type="button">전체</button>
+          <button class="entry-filter-btn" data-entry-filter="CANDIDATE" type="button">진입 후보</button>
+          <button class="entry-filter-btn" data-entry-filter="진입 가능" type="button">진입 가능</button>
+          <button class="entry-filter-btn" data-entry-filter="분할만" type="button">분할만</button>
+          <button class="entry-filter-btn" data-entry-filter="대기" type="button">대기</button>
+          <button class="entry-filter-btn" data-entry-filter="피하기" type="button">피하기</button>
+        </div>
+        <label><input type="checkbox" id="hideRisky" /> 위험 제외</label>
+        <label>1개월 수익률 <input id="minMonth" type="number" value="-100" /> % 이상</label>
+        <label>RSI <input id="maxRsi" type="number" value="100" /> 이하</label>
+        <label>배당수익률 <input id="minYield" type="number" value="0" step="0.1" /> % 이상</label>
+        <label>위험점수 <input id="maxRisk" type="number" value="99" /> 이하</label>
+        <div class="price-filter" aria-label="1주 가격 필터">
+          <span>1주 가격</span>
+          <input id="minPrice" type="number" value="" placeholder="최소" />
+          <span>~</span>
+          <input id="maxPrice" type="number" value="" placeholder="최대" />
+        </div>
+      </section>
+
+      <section class="summary-grid">
+        <div class="metric">
+          <span>표시/전체</span>
+          <strong id="countMetric">0</strong>
+        </div>
+        <div class="metric">
+          <span>위험/주의</span>
+          <strong id="riskMetric">0</strong>
+        </div>
+        <div class="metric">
+          <span>평균 1개월 수익률</span>
+          <strong id="avgMetric">-</strong>
+        </div>
+        <div class="metric">
+          <span>예상 연 배당</span>
+          <strong id="divMetric">-</strong>
+        </div>
+        <div class="metric">
+          <span>모의투자 세후 손익</span>
+          <strong id="paperMetric">-</strong>
+        </div>
+      </section>
+
+      <section class="panel picks-panel">
+        <div class="panel-head">
+          <h2>현재 먼저 볼 후보</h2>
+          <span>위험이 0인 종목만 찾는 게 아니라, 상대적으로 덜 불안한 순서입니다.</span>
+        </div>
+        <div id="candidatePicks" class="candidate-grid"></div>
+      </section>
+
+      <section class="panel allocation-panel">
+        <div class="panel-head">
+          <h2>투자금 배분 제안</h2>
+          <span>몰빵을 피하고, 후보 점수에 따라 나눠 담는 보수적 예시입니다.</span>
+        </div>
+        <div class="allocation-controls">
+          <label>투자할 금액(원)<input id="allocationAmount" type="number" value="10000000" /></label>
+          <label>최대 종목 수<input id="allocationCount" type="number" value="5" min="2" max="10" /></label>
+          <label>한 종목 최대 비중(%)<input id="maxPositionPct" type="number" value="35" min="10" max="60" /></label>
+        </div>
+        <div id="allocationPlan" class="allocation-grid"></div>
+      </section>
+
+      <section class="chart-board">
+        <div class="panel chart-panel large-chart">
+          <div class="panel-head">
+            <h2>수익률 비교</h2>
+            <span>최근 1개월 기준</span>
+          </div>
+          <div id="returnChart" class="bar-chart"></div>
+        </div>
+        <div class="panel chart-panel">
+          <div class="panel-head">
+            <h2>위험 vs 배당</h2>
+            <span>위험 낮음/배당 높음부터 확인</span>
+          </div>
+          <div id="riskYieldChart" class="risk-matrix"></div>
+        </div>
+        <div class="panel chart-panel">
+          <div class="panel-head">
+            <h2>동일비중 배당 예상</h2>
+            <span>세후 연 배당 추정</span>
+          </div>
+          <div id="dividendChart" class="bar-chart"></div>
+        </div>
+      </section>
+
+      <section class="workspace">
+        <div class="panel table-panel">
+          <div class="panel-head">
+            <h2>종목 필터</h2>
+            <span id="loading"></span>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>종목</th>
+                  <th>판정</th>
+                  <th>진입</th>
+                  <th>현재가</th>
+                  <th>1개월</th>
+                  <th>1년</th>
+                  <th>RSI</th>
+                  <th>거래량</th>
+                  <th>배당률</th>
+                  <th>위험</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody id="stockRows"></tbody>
+            </table>
+          </div>
+          <div id="pagination" class="pagination"></div>
+        </div>
+
+        <aside class="panel detail-panel">
+          <div class="panel-head">
+            <h2>초보자용 분석 리포트</h2>
+          </div>
+          <div id="detail" class="detail-empty">종목을 선택하면 추세, 세금, 배당, 조심할 점이 표시됩니다.</div>
+        </aside>
+      </section>
+
+      <section class="panel paper-panel">
+        <div class="panel-head">
+          <h2>모의투자 기록</h2>
+          <button id="clearPaper" class="ghost">기록 초기화</button>
+        </div>
+        <div id="paperTrades" class="paper-list"></div>
+      </section>
+    </main>
+    <script src="/app.js?v=20260514-15"></script>
+  </body>
+</html>
