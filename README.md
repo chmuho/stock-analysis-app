@@ -7,7 +7,7 @@
 PowerShell에서 이 폴더로 이동한 뒤 실행합니다.
 
 ```powershell
-C:\Users\최무호\AppData\Local\Python\bin\python.exe app.py
+python app.py
 ```
 
 브라우저에서 아래 주소를 엽니다.
